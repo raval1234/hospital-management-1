@@ -16,7 +16,7 @@ async function c_appoint(req, res, next) {
 
     let find_patient = await Patient.findOne({ email });
     if (!find_patient) return res.status(400).send('Patient Not Found');
-    // console.log(find_patient._id)
+
     let appointments = await Appointment.create({
       reason,
       time,
