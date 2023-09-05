@@ -68,8 +68,10 @@ async function c_user(req, res, next) {
       doctor,
     });
 
-    if (!user) return res.status(400).send('user data not create');
-
+    if (!user)
+      return next(
+        new APIError(ErrMessages.dataNotCreated, httpStatus.UNAUTHORIZED, true)
+      );
     next(user);
   } catch (err) {
     return next(
@@ -82,12 +84,17 @@ async function login_user(req, res, next) {
   try {
     let { email, password } = req.body;
     let user = await User.findOne({ email });
+    if (!user)
+    return next(
+      new APIError(ErrMessages.dataNotFound, httpStatus.UNAUTHORIZED, true)
+    );
 
     let pass = await bcrypts.compare(password, user.password);
+    console.log(pass)
     if (!pass)
       return next(
         new APIError(ErrMessages.wrongPassword, httpStatus.UNAUTHORIZED, true)
-      );
+    );
 
     let tkn = await jwt.sign(
       {
@@ -100,13 +107,23 @@ async function login_user(req, res, next) {
         new APIError(ErrMessages.tokenNotCreated, httpStatus.UNAUTHORIZED, true)
       );
 
-    let login = await User.updateOne({ email }, { $set: { tokens: tkn } });
-    if (!login)
+      let updateResult = await User.findOneAndUpdate({ email }, { 
+        $push: {
+          tokens: {
+            $each: [tkn],
+            $slice: -3  
+          }
+        }
+      });
+
+
+    if (!updateResult)
       return next(
-        new APIError(ErrMessages.wrongPassword, httpStatus.UNAUTHORIZED, true)
+        new APIError(ErrMessages.tokenUpdate, httpStatus.UNAUTHORIZED, true)
       );
 
-    next({ Token: tkn, UserId: user._id });
+    next(SuccessMessages.userLogin);
+
   } catch (err) {
     return next(
       new APIError(err.message, httpStatus.INTERNAL_SERVER_ERROR, true, err)
@@ -142,13 +159,8 @@ async function forget_password(req, res, next) {
 
     sendresetpassword(f_email.first_name, f_email.email, tkn);
 
-    next(
-      new APIError(
-        SuccessMessages.forgetPasswordSuccess,
-        httpStatus.UNAUTHORIZED,
-        true
-      )
-    );
+    next(SuccessMessages.forgetPasswordSuccess);
+
   } catch (err) {
     return next(
       new APIError(err.message, httpStatus.INTERNAL_SERVER_ERROR, true, err)
@@ -176,74 +188,8 @@ async function reset_password(req, res, next) {
         new APIError(ErrMessages.linkExpired, httpStatus.UNAUTHORIZED, true)
       );
 
-    next(
-      new APIError(
-        SuccessMessages.resetPasswordSuccess,
-        httpStatus.UNAUTHORIZED,
-        true
-      )
-    );
-  } catch (err) {
-    return next(
-      new APIError(err.message, httpStatus.INTERNAL_SERVER_ERROR, true, err)
-    );
-  }
-}
+    next(SuccessMessages.resetPasswordSuccess);
 
-async function reset_password(req, res, next) {
-  try {
-    let { email, currentPassword, newPassword } = req.body;
-
-    let user = User.findOne(email);
-
-    if (!user) {
-      return res.status(400).send({ error: 'User not found' });
-    }
-    if (!user)
-      return next(
-        new APIError(ErrMessages.linkExpired, httpStatus.UNAUTHORIZED, true)
-      );
-
-    // Check current password
-    let isMatch = await user.comparePassword(currentPassword);
-    if (!isMatch) {
-      return res.status(400).send({ error: 'Current password is incorrect' });
-    }
-    if (!isMatch)
-      return next(
-        new APIError(ErrMessages.linkExpired, httpStatus.UNAUTHORIZED, true)
-      );
-
-    // Validate new password with Joi
-    let validationUser = new UserModel({ username, password: newPassword });
-    let validationResult = validationUser.validate();
-    if (validationResult.error) {
-      return res
-        .status(400)
-        .send({ error: validationResult.error.details[0].message });
-    }
-
-    // Hash and update the new password
-    await validationUser.hashPassword();
-    user.password = validationUser.password;
-    if (!isMatch)
-      return next(
-        new APIError(ErrMessages.linkExpired, httpStatus.UNAUTHORIZED, true)
-      );
-
-    res.send({ message: 'Password changed successfully!' });
-    if (!set_pass)
-      return next(
-        new APIError(ErrMessages.linkExpired, httpStatus.UNAUTHORIZED, true)
-      );
-
-    next(
-      new APIError(
-        SuccessMessages.resetPasswordSuccess,
-        httpStatus.UNAUTHORIZED,
-        true
-      )
-    );
   } catch (err) {
     return next(
       new APIError(err.message, httpStatus.INTERNAL_SERVER_ERROR, true, err)

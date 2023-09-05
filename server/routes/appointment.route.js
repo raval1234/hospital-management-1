@@ -5,12 +5,12 @@ import appointment from'../beans/appointments';
 const router = express.Router();
 
 router
-  .route('/appointcre')
+  .route('/appoint-create')
   //** POST appointment/appoint_create - appointment create*/
   .post(validate(appointmentParams.appoint_create), appointment.c_appoint);
 
 router
-  .route('/appointlist')
+  .route('/appoint-list')
   //** GET appointment/appoint_list - appointment list_appoint*/
   .get(appointment.list_appoint);
 
@@ -18,5 +18,10 @@ router
   .route('/checkout')
   //** GET appointment/checkout_patient - checkout_patient*/
   .get(validate(appointmentParams.checkout_patient),appointment.checkout_patient);
+
+router
+  .route('/date-filter')
+  //** GET appointment/ - date_filter*/
+  .get(appointment.date_filter);
 
 module.exports = router;

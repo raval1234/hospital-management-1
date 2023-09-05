@@ -7,11 +7,11 @@ import roomRouter from './room.route';
 import paginationRouter from './pagination.route';
 import userRouter from './users.route';
 
-import { authorize } from '../beans/auth';
 
 const router = express.Router();
+// router.use(authorize);
 
-
+// router.use(authorize);
 /* authorized routes APIs */
 router.use('/appointment', appointmentRoutes);
 router.use('/hospital', hospitalRoutes);

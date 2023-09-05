@@ -3,6 +3,11 @@ import Patient from '../../server/models/patient';
 import Hospital from '../../server/models/hospital';
 import Appointment from '../../server/models/appointment';
 import APIError from '../helpers/APIError';
+import httpStatus from 'http-status';
+import { ErrMessages, SuccessMessages } from '../helpers/AppMessages';
+import jwt from "jsonwebtoken";
+import { jwtSecret } from '../../bin/www';
+
 
 // import { mailchimp_email, mailchimp_api_key} from '../../bin/www';
 // const mailchimp = require('@mailchimp/mailchimp_transactional')(mailchimp_api_key);
@@ -54,24 +59,30 @@ async function c_doctor(req, res, next) {
       hospitalId,
     });
 
-    if (!data) return res.status(400).send('Data not Created');
-    console.log(data._id);
+    if (!data) return next(
+      new APIError(ErrMessages.dataNotCreated, httpStatus.UNAUTHORIZED, true)
+    );
 
     let doctor_id = await Hospital.findByIdAndUpdate(
       { _id: data.hospitalId },
       { $push: { doctors: data._id } }
     );
 
-    if (!doctor_id) return res.status(400).send('Doctor id not not Found');
+    if (!doctor_id) return next(
+      new APIError(ErrMessages.hospitalUpdateFailed, httpStatus.UNAUTHORIZED, true)
+    );
 
     const userData = await Doctor.findOne({ email });
     console.log(userData.name);
-    if (!userData) return res.status(400).send('patient Email not Find');
+    if (!userData) return next(
+      new APIError(ErrMessages.doctorNotFound, httpStatus.UNAUTHORIZED, true)
+    );
 
     // sendcreatemail(userData.name,userData.email);
-    sendEmailToUser(userData.email);
+    // sendEmailToUser(userData.email);
 
-    next(data, doctor_id);
+    next(SuccessMessages.doctorCreated);
+
   } catch (err) {
     return next(
       new APIError(err.message, httpStatus.INTERNAL_SERVER_ERROR, true, err)
@@ -79,15 +90,20 @@ async function c_doctor(req, res, next) {
   }
 }
 
-async function list_patient(req, res, next) {
+async function list_doctor(req, res, next) {
   try {
+
+    let date = {name:"jay"};
+    let data = jwt.sign(date, jwtSecret);
+    console.log(data);
+
     let srt = await Doctor.find({}).select(
       '-_id name call_num email gender hospitalId'
     );
 
     let srts = await Doctor.aggregate([
       {
-        $project: {
+        $project: { 
           _id: 0,
           name: 1,
           email: 1,
@@ -98,10 +114,12 @@ async function list_patient(req, res, next) {
       },
     ]);
 
-    if (!srt) return res.status(400).send('patient data not create');
+    if (!srt) return next(
+      new APIError(ErrMessages.doctorNotFound, httpStatus.UNAUTHORIZED, true)
+    );
 
     next(srts);
-    // res.status(200).json({srts});
+
   } catch (err) {
     return next(
       new APIError(err.message, httpStatus.INTERNAL_SERVER_ERROR, true, err)
@@ -127,6 +145,7 @@ async function pd_data(req, res, next) {
           as: 'enrollee_info',
         },
       },
+
       // {
       //     $project:
       //     {
@@ -140,6 +159,11 @@ async function pd_data(req, res, next) {
       //     }
       // }
     ]);
+
+    if(!dts) return next(
+      new APIError(ErrMessages.dataNotFound, httpStatus.UNAUTHORIZED, true)
+    );
+
     next(dts);
     // res.status(200).json({dts});
   } catch (err) {
@@ -151,13 +175,25 @@ async function pd_data(req, res, next) {
 
 async function update_doctor(req, res, next) {
   try {
-    let { _id, email } = req.query;
+    let { ids, email, name} = req.query;
 
-    let update = await Doctor.updateOne({ _id }, { email });
-    if (!update) return res.status(400).send('Data Not find');
+    let doctorEmail = await Doctor.findOne({ email });
+    console.log('1',doctorEmail);
+    console.log('2',doctorEmail.ids);
 
-    next(update);
-    res.status(200).json({ update });
+    if (doctorEmail) {
+      return next(
+        new APIError(ErrMessages.EmailAlreadyEexist, httpStatus.CONFLICT, true)
+      );
+    }
+
+    let update = await Doctor.updateOne({ _id:ids }, { email, name });
+    if (!update) return next(
+      new APIError(ErrMessages.doctorUpdateFailed, httpStatus.UNAUTHORIZED, true)
+    );
+
+    next(SuccessMessages.doctorUpdateSuccess);
+
   } catch (err) {
     return next(
       new APIError(err.message, httpStatus.INTERNAL_SERVER_ERROR, true, err)
@@ -189,8 +225,12 @@ async function appoint_doctor(req, res, next) {
       // }
     ]);
 
+    if(!dts) return next(
+      new APIError(ErrMessages.appointmentNotFound, httpStatus.UNAUTHORIZED, true)
+    );
+
     next(dts);
-    res.status(200).json({ dts });
+
   } catch (err) {
     return next(
       new APIError(err.message, httpStatus.INTERNAL_SERVER_ERROR, true, err)
@@ -202,6 +242,6 @@ module.exports = {
   c_doctor,
   pd_data,
   update_doctor,
-  list_patient,
+  list_doctor,
   appoint_doctor,
 };

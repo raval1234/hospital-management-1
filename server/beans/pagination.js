@@ -60,7 +60,6 @@ async function pd_data(req, res, next) {
     ]);
 
     next(dts);
-    res.status(200).json({ dts });
   } catch (err) {
     return next(
       new APIError(err.message, httpStatus.INTERNAL_SERVER_ERROR, true, err)
