@@ -6,20 +6,22 @@ import patientRoutes from './patient.route';
 import roomRouter from './room.route';
 import paginationRouter from './pagination.route';
 import userRouter from './users.route';
-
-import { authorize } from '../beans/auth';
+import Pagination from '../beans/pagination';
+// import app from "../beans/appointments";
 
 const router = express.Router();
+// router.use(authorize);
 
-
+// router.use(authorize);
 /* authorized routes APIs */
 router.use('/appointment', appointmentRoutes);
 router.use('/hospital', hospitalRoutes);
-router.use('/doctor',doctorRoutes);
-router.use('/patient',patientRoutes);
-router.use('/room',roomRouter);
-router.use('/pagination',paginationRouter);
-router.use('/users',userRouter);
+router.use('/doctor', doctorRoutes);
+router.use('/patient', patientRoutes);
+router.use('/room', roomRouter);
+router.use('/pagination', paginationRouter);
+router.use('/users', userRouter);
+router.use('/pagination_doctor', Pagination.pagination_doctor);
+// router.use("/listAppointments", Pagination.listAppointments);
 
 module.exports = router;
-

@@ -11,6 +11,7 @@ const create_user = new mongoose.Schema(
     },
     email: {
       type: String,
+      unique: true,
     },
     dob: {
       type: Date,
@@ -32,9 +33,11 @@ const create_user = new mongoose.Schema(
     password: {
       type: String,
     },
-    tokens: {
-      type: String,
-    },
+    tokens: [
+      {
+        type: String,
+      },
+    ],
     doctor: {
       type: mongoose.Types.ObjectId,
       ref: 'doctor',

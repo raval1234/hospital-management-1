@@ -12,8 +12,9 @@ const doctorParams = {
   },
   doctor_update: {
     query: Joi.object({
-      _id: Joi.string().hex().required(),
+      ids: Joi.string().hex().required(),
       email: Joi.string().required(),
+      // name: Joi.string().required()
     }),
   },
 };

@@ -4,6 +4,9 @@ import Doctor from '../../server/models/doctrors';
 import Rooms from '../../server/models/room';
 import APIError from '../helpers/APIError';
 import Patient from '../../server/models/patient';
+import httpStatus from 'http-status';
+import { ErrMessages, SuccessMessages } from '../helpers/AppMessages';
+const ObjectId = require('mongoose').Types.ObjectId;
 
 async function c_hospital(req, res, next) {
   try {
@@ -15,9 +18,12 @@ async function c_hospital(req, res, next) {
       call_num,
       doctorsId,
     });
-    if (!data) return res.status(400).send('Data Not Create');
+    if (!data)
+      return next(
+        new APIError(ErrMessages.dataNotCreated, httpStatus.UNAUTHORIZED, true)
+      );
 
-    next(data);
+    next(SuccessMessages.hospitalCreated);
   } catch (err) {
     return next(
       new APIError(err.message, httpStatus.INTERNAL_SERVER_ERROR, true, err)
@@ -30,16 +36,21 @@ async function d_hospital(req, res, next) {
     let _id = req.query._id;
 
     let hptl = await Hospital.findOne({ _id });
-    if (!hptl) return res.status(400).send('Data Not find');
+    if (!hptl)
+      return next(
+        new APIError(
+          ErrMessages.hospitalNotFound,
+          httpStatus.UNAUTHORIZED,
+          true
+        )
+      );
 
     if (hptl) {
       for (const d of hptl.doctorsId) {
         let doctor = await Doctor.find({ _id: d });
         if (doctor) {
           let patient = await Patient.find({ doctor: d });
-          console.log(patient);
           let appointment = await Appointment.findOne({ doctorId: d });
-          console.log(appointment);
 
           if (appointment) {
             await Rooms.updateOne(
@@ -52,10 +63,10 @@ async function d_hospital(req, res, next) {
           await Doctor.deleteOne({ _id: d });
         }
       }
-      await Hospital.deleteOne({ _id: hospita_id });
+      await Hospital.deleteOne({ _id });
     }
-    next(hptl);
-    // res.status(200).json({ hptl });
+
+    next(SuccessMessages.hospitalDelete);
   } catch (err) {
     return next(
       new APIError(err.message, httpStatus.INTERNAL_SERVER_ERROR, true, err)
@@ -65,14 +76,12 @@ async function d_hospital(req, res, next) {
 
 async function list_hospital(req, res, next) {
   try {
-    let srt = await Hospital.find({}).select(
-      '-_id name address call_num doctorsId'
-    );
-
-    if (!srt) return res.status(400).send('patient data not create');
+    let populate = [{ path: 'doctorsId', select: 'name' }];
+    let srt = await Hospital.find({})
+      .select('name address call_num')
+      .populate(populate);
 
     next(srt);
-    // res.status(200).json({ srt });
   } catch (err) {
     return next(
       new APIError(err.message, httpStatus.INTERNAL_SERVER_ERROR, true, err)
@@ -82,14 +91,22 @@ async function list_hospital(req, res, next) {
 
 async function get_hospital(req, res, next) {
   try {
-    let _id = req.query._id;
+    let filter = { _id: req.query._id };
 
-    let hptl = await Hospital.find({ _id });
+    let populate = [{ path: 'doctorsId', select: 'name' }];
 
-    if (!hptl) return res.status(400).send('Data Not find');
+    let hptl = await Hospital.find(filter).populate(populate);
+
+    if (!hptl)
+      return next(
+        new APIError(
+          ErrMessages.hospitalNotFound,
+          httpStatus.UNAUTHORIZED,
+          true
+        )
+      );
 
     next(hptl);
-    // res.status(200).json({ hptl });
   } catch (err) {
     return next(
       new APIError(err.message, httpStatus.INTERNAL_SERVER_ERROR, true, err)
@@ -99,14 +116,30 @@ async function get_hospital(req, res, next) {
 
 async function update_hospital(req, res, next) {
   try {
-    let { _id, address } = req.query;
+    let { _id, name, address, call_num, doctorsId } = req.body;
 
-    let hptl = await Hospital.updateOne({ _id }, { address });
+    let updatedValue = {};
+    if (name) updatedValue.name = name;
+    if (address) updatedValue.address = address;
+    if (call_num) updatedValue.call_num = call_num;
+    if (doctorsId) {
+      let doctor = ObjectId(doctorsId);
+      updatedValue.$push = { doctorsId: doctor };
+    }
+    console.log(updatedValue);
 
-    if (!hptl) return res.status(400).send('Data Not find');
+    let hptl = await Hospital.updateOne({ _id }, updatedValue);
 
-    next(hptl);
-    res.status(200).json({ hptl });
+    if (!hptl)
+      return next(
+        new APIError(
+          ErrMessages.hospitalUpdateFailed,
+          httpStatus.UNAUTHORIZED,
+          true
+        )
+      );
+
+    next(SuccessMessages.hospitalUpdate);
   } catch (err) {
     return next(
       new APIError(err.message, httpStatus.INTERNAL_SERVER_ERROR, true, err)

@@ -9,6 +9,7 @@ const create_doctors = new mongoose.Schema({
   },
   email: {
     type: String,
+    unique: true,
   },
   gender: {
     type: String,
