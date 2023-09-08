@@ -8,11 +8,6 @@ const envVarsSchema = Joi.object({
   JWTSECRET: Joi.string(),
   EXPIRESIN: Joi.string(),
   SALT: Joi.number(),
-  ADMIN_NAME: Joi.string(),
-  ADMIN_EMAIL: Joi.string(),
-  ADMIN_PASSWORD: Joi.string(),
-  ADMIN_PHONENUMBER: Joi.string(),
-  ADMIN_PROFILE_PICTURE: Joi.string(),
   MAILCHIMP_EMAIL: Joi.string(),
   MAILCHIMP_API_KEY: Joi.string(),
 })
@@ -30,8 +25,8 @@ const config = {
   jwtSecret: envVars.JWTSECRET,
   expiresIn: envVars.EXPIRESIN,
   salt: envVars.SALT,
-  emailUser: 'jaymdtech@gmail.com',
-  emailPassword: 'yymbqhmnessgrdxa',
+  emailUser: envVars.emailUser,
+  emailPassword: envVars.emailPassword,
   mailchimp_email: envVars.MAILCHIMP_EMAIL,
   mailchimp_api_key: envVars.MAILCHIMP_API_KEY,
 };

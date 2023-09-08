@@ -6,6 +6,7 @@ import config from '../../config/config';
 import httpStatus from 'http-status';
 import APIError from '../helpers/APIError';
 import { ErrMessages, SuccessMessages } from '../helpers/AppMessages';
+const ObjectId = require('mongoose').Types.ObjectId;
 
 async function sendcreatemail(name, email) {
   try {
@@ -53,11 +54,16 @@ async function c_patient(req, res, next) {
 
     let patient_exi = await Patient.findOne({ email });
 
-    if (patient_exi) return next(
-      new APIError(ErrMessages.patientAlreadyEexist, httpStatus.UNAUTHORIZED, true)
-    );
+    if (patient_exi)
+      return next(
+        new APIError(
+          ErrMessages.patientAlreadyEexist,
+          httpStatus.UNAUTHORIZED,
+          true
+        )
+      );
 
-    let patients = await Patient.create({
+    await Patient.create({
       first_name,
       last_name,
       email,
@@ -68,19 +74,20 @@ async function c_patient(req, res, next) {
       diseases,
       doctor,
     });
-    console.log(patients);
 
-    if (!patients) return next(
-      new APIError(ErrMessages.dataNotCreated, httpStatus.UNAUTHORIZED, true)
-    );
+    // console.log(patients);
 
-    const userData = await Patient.findOne({ email });
+    // if (!patients) return next(
+    //   new APIError(ErrMessages.dataNotCreated, httpStatus.UNAUTHORIZED, true)
+    // );
 
-    if (!userData) return next(
-      new APIError(ErrMessages.patientNotFound, httpStatus.UNAUTHORIZED, true)
-    );
+    // const userData = await Patient.findOne({ email });
 
-    sendcreatemail(userData.first_name, userData.email);
+    // if (!userData) return next(
+    //   new APIError(ErrMessages.patientNotFound, httpStatus.UNAUTHORIZED, true)
+    // );
+
+    sendcreatemail(first_name, email);
 
     next(SuccessMessages.patientCreated);
     // res.status(200).json({patients});
@@ -93,16 +100,16 @@ async function c_patient(req, res, next) {
 
 async function list_patient(req, res, next) {
   try {
-    let srt = await Patient.find({}).select(
-      '-_id first_name last_name email dob gender weight height diseases doctor'
-    );
+    let populate = [{ path: 'doctor', select: 'name' }];
+    let srt = await Patient.find({})
+      .select(
+        '-_id first_name last_name email dob gender weight height diseases doctor'
+      )
+      .populate(populate);
 
-    if (!srt) return next(
-      new APIError(ErrMessages.patientNotFound, httpStatus.UNAUTHORIZED, true)
-    );
-
+    // let doctor =  req.query.doctor;
+    // let srt = await Patient.find({doctor}).select('first_name last_name email dob gender weight height diseases');
     next(srt);
-
   } catch (err) {
     return next(
       new APIError(err.message, httpStatus.INTERNAL_SERVER_ERROR, true, err)
@@ -116,12 +123,12 @@ async function sort_patient(req, res, next) {
       .sort({ first_name: 1 })
       .select('-_id first_name last_name');
 
-    if (!srt) return next(
-      new APIError(ErrMessages.patientNotFound, httpStatus.UNAUTHORIZED, true)
-    );
+    if (!srt)
+      return next(
+        new APIError(ErrMessages.patientNotFound, httpStatus.UNAUTHORIZED, true)
+      );
 
     next(srt);
-
   } catch (err) {
     return next(
       new APIError(err.message, httpStatus.INTERNAL_SERVER_ERROR, true, err)
@@ -138,9 +145,10 @@ async function search_patient(req, res, next) {
       email: { $regex: email, $options: 'ix' },
     }).select('-_id first_name last_name');
 
-    if (!srt) return next(
-      new APIError(ErrMessages.patientNotFound, httpStatus.UNAUTHORIZED, true)
-    );
+    if (!srt)
+      return next(
+        new APIError(ErrMessages.patientNotFound, httpStatus.UNAUTHORIZED, true)
+      );
 
     next(srt);
   } catch (err) {
@@ -154,44 +162,64 @@ async function delete_patient(req, res, next) {
   try {
     let _id = req.query._id;
     let fd_patient = await Patient.find({ _id });
-    if (!fd_patient) return next(
-      new APIError(ErrMessages.patientNotFound, httpStatus.UNAUTHORIZED, true)
-    );
+    if (!fd_patient)
+      return next(
+        new APIError(ErrMessages.patientNotFound, httpStatus.UNAUTHORIZED, true)
+      );
 
     let fd_appointment = await Appoint.find({ patientId: _id });
-    if (!fd_appointment) return next(
-      new APIError(ErrMessages.appointmentNotFound , httpStatus.UNAUTHORIZED, true)
-    );
+    if (!fd_appointment)
+      return next(
+        new APIError(
+          ErrMessages.appointmentNotFound,
+          httpStatus.UNAUTHORIZED,
+          true
+        )
+      );
 
     for (const d of fd_appointment) {
       let fd_Room = await Rooms.find({ _id: d.Room });
-      if (!fd_Room) return next(
-        new APIError(ErrMessages.roomNotFound , httpStatus.UNAUTHORIZED, true)
-      );
+      if (!fd_Room)
+        return next(
+          new APIError(ErrMessages.roomNotFound, httpStatus.UNAUTHORIZED, true)
+        );
 
       let update_room = await Rooms.findOneAndUpdate(
         { _id: d.Room },
         { available: true }
       );
 
-      if (!update_room) return next(
-        new APIError(ErrMessages.roomUpdateFailed , httpStatus.UNAUTHORIZED, true)
-      );
-
+      if (!update_room)
+        return next(
+          new APIError(
+            ErrMessages.roomUpdateFailed,
+            httpStatus.UNAUTHORIZED,
+            true
+          )
+        );
     }
 
     let dlt_patient = await Patient.findByIdAndDelete({ _id });
-    if (!dlt_patient) return next(
-      new APIError(ErrMessages.patientDeletedFailed , httpStatus.UNAUTHORIZED, true)
-    );
+    if (!dlt_patient)
+      return next(
+        new APIError(
+          ErrMessages.patientDeletedFailed,
+          httpStatus.UNAUTHORIZED,
+          true
+        )
+      );
 
     let dlt_appointment = await Appoint.findOneAndDelete({ patientId: _id });
-    if (!dlt_appointment) return next(
-      new APIError(ErrMessages.appointmentDeletedFailed , httpStatus.UNAUTHORIZED, true)
-    );
+    if (!dlt_appointment)
+      return next(
+        new APIError(
+          ErrMessages.appointmentDeletedFailed,
+          httpStatus.UNAUTHORIZED,
+          true
+        )
+      );
 
     next(SuccessMessages.patientDeleted);
-
   } catch (err) {
     return next(
       new APIError(err.message, httpStatus.INTERNAL_SERVER_ERROR, true, err)
@@ -201,22 +229,44 @@ async function delete_patient(req, res, next) {
 
 async function update_patient(req, res, next) {
   try {
-    let { _id, email, weight } = req.query;
+    let {
+      _id,
+      first_name,
+      last_name,
+      email,
+      dob,
+      gender,
+      weight,
+      height,
+      diseases,
+      doctor,
+    } = req.query;
 
-    let update = await Patient.updateOne(
-      { _id },
-      { email, weight: parseInt(weight) }
-    );
-    if (!update) return next(
-      new APIError(ErrMessages.patientUpdateFailed , httpStatus.UNAUTHORIZED, true)
-    );
+    let updatedValue = {};
+    if (first_name) updatedValue.first_name = first_name;
+    if (last_name) updatedValue.last_name = last_name;
+    if (email) updatedValue.email = email;
+    if (dob) updatedValue.dob = new Date(dob);
+    if (gender) updatedValue.gender = gender;
+    if (weight) updatedValue.weight = parseInt(weight);
+    if (height) updatedValue.height = parseInt(height);
+    if (diseases) updatedValue.diseases = diseases;
+    if (doctor) updatedValue.doctor = new ObjectId(doctor);
+
+    let update = await Patient.updateOne({ _id }, updatedValue);
+    if (!update)
+      return next(
+        new APIError(
+          ErrMessages.patientUpdateFailed,
+          httpStatus.UNAUTHORIZED,
+          true
+        )
+      );
     next(SuccessMessages.patientUpdate);
-
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 }
-
 
 module.exports = {
   c_patient,

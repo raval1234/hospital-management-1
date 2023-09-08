@@ -16,7 +16,7 @@ const doctorParams = {
       email: Joi.string().required(),
       // name: Joi.string().required()
     }),
-  }, 
+  },
 };
 
 export default doctorParams;

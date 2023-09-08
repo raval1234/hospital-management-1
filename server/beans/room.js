@@ -11,11 +11,11 @@ async function c_room(req, res, next) {
       available,
     });
 
-    if (!rooms) return next(
-      new APIError(ErrMessages.dataNotCreated, httpStatus.UNAUTHORIZED, true)
-    );
+    if (!rooms)
+      return next(
+        new APIError(ErrMessages.dataNotCreated, httpStatus.UNAUTHORIZED, true)
+      );
     next(SuccessMessages.roomCreated);
-
   } catch (err) {
     return next(
       new APIError(err.message, httpStatus.INTERNAL_SERVER_ERROR, true, err)
@@ -27,12 +27,12 @@ async function room_available(req, res, next) {
   try {
     let rooms = await Room.find({ available: { $eq: false } }).select('name');
 
-    if (!rooms) return next(
-      new APIError(ErrMessages.roomNotFound, httpStatus.UNAUTHORIZED, true)
-    );
+    if (!rooms)
+      return next(
+        new APIError(ErrMessages.roomNotFound, httpStatus.UNAUTHORIZED, true)
+      );
 
     next(rooms);
-
   } catch (err) {
     return next(
       new APIError(err.message, httpStatus.INTERNAL_SERVER_ERROR, true, err)

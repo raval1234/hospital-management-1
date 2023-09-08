@@ -85,16 +85,16 @@ async function login_user(req, res, next) {
     let { email, password } = req.body;
     let user = await User.findOne({ email });
     if (!user)
-    return next(
-      new APIError(ErrMessages.dataNotFound, httpStatus.UNAUTHORIZED, true)
-    );
+      return next(
+        new APIError(ErrMessages.dataNotFound, httpStatus.UNAUTHORIZED, true)
+      );
 
     let pass = await bcrypts.compare(password, user.password);
-    console.log(pass)
+    console.log(pass);
     if (!pass)
       return next(
         new APIError(ErrMessages.wrongPassword, httpStatus.UNAUTHORIZED, true)
-    );
+      );
 
     let tkn = await jwt.sign(
       {
@@ -107,15 +107,17 @@ async function login_user(req, res, next) {
         new APIError(ErrMessages.tokenNotCreated, httpStatus.UNAUTHORIZED, true)
       );
 
-      let updateResult = await User.findOneAndUpdate({ email }, { 
+    let updateResult = await User.findOneAndUpdate(
+      { email },
+      {
         $push: {
           tokens: {
             $each: [tkn],
-            $slice: -3  
-          }
-        }
-      });
-
+            $slice: -3,
+          },
+        },
+      }
+    );
 
     if (!updateResult)
       return next(
@@ -123,7 +125,6 @@ async function login_user(req, res, next) {
       );
 
     next(SuccessMessages.userLogin);
-
   } catch (err) {
     return next(
       new APIError(err.message, httpStatus.INTERNAL_SERVER_ERROR, true, err)
@@ -160,7 +161,6 @@ async function forget_password(req, res, next) {
     sendresetpassword(f_email.first_name, f_email.email, tkn);
 
     next(SuccessMessages.forgetPasswordSuccess);
-
   } catch (err) {
     return next(
       new APIError(err.message, httpStatus.INTERNAL_SERVER_ERROR, true, err)
@@ -189,7 +189,6 @@ async function reset_password(req, res, next) {
       );
 
     next(SuccessMessages.resetPasswordSuccess);
-
   } catch (err) {
     return next(
       new APIError(err.message, httpStatus.INTERNAL_SERVER_ERROR, true, err)

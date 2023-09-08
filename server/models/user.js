@@ -11,7 +11,7 @@ const create_user = new mongoose.Schema(
     },
     email: {
       type: String,
-      unique:true
+      unique: true,
     },
     dob: {
       type: Date,
