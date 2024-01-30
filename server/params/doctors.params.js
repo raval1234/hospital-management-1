@@ -1,4 +1,4 @@
-import Joi from 'joi';
+import Joi from "joi";
 
 const doctorParams = {
   doctor_create: {
@@ -11,10 +11,14 @@ const doctorParams = {
     }),
   },
   doctor_update: {
+    body: Joi.object({
+      email: Joi.string(),
+      name: Joi.string(),
+      call_num: Joi.number(),
+      gender: Joi.string(),
+    }),
     query: Joi.object({
-      ids: Joi.string().hex().required(),
-      email: Joi.string().required(),
-      // name: Joi.string().required()
+      doctorId: Joi.string().hex().required(),
     }),
   },
 };

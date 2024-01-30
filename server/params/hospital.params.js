@@ -1,4 +1,4 @@
-import Joi from 'joi';
+import Joi from "joi";
 
 const hospitalParams = {
   hospital_create: {
@@ -11,6 +11,11 @@ const hospitalParams = {
   },
   hospital_update: {
     body: Joi.object({
+      name: Joi.string(),
+      address: Joi.string(),
+      call_num: Joi.string(),
+    }),
+    query: Joi.object({
       _id: Joi.string().hex().required(),
     }),
   },

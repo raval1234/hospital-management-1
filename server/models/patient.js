@@ -3,19 +3,22 @@ const mongoose = require('mongoose');
 const create_patient = new mongoose.Schema({
   first_name: {
     type: String,
+    require:true
   },
   last_name: {
     type: String,
+    require:true
   },
   email: {
     type: String,
-    unique: true,
+    require:true
   },
   dob: {
     type: Date,
   },
   gender: {
     type: String,
+    require:true
   },
   weight: {
     type: Number,
@@ -26,6 +29,7 @@ const create_patient = new mongoose.Schema({
   diseases: [
     {
       type: String,
+      require:true
     },
   ],
   doctor: {

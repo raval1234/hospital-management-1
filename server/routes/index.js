@@ -7,7 +7,6 @@ import roomRouter from './room.route';
 import paginationRouter from './pagination.route';
 import userRouter from './users.route';
 import Pagination from '../beans/pagination';
-// import app from "../beans/appointments";
 
 const router = express.Router();
 // router.use(authorize);

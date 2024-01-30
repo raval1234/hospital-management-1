@@ -6,10 +6,10 @@ export const ErrMessages = {
   hospitalNotFound: 'Hospital Not Found',
   dataNotFound: 'Data Not Found',
 
-  dataNotCreated: 'data created Failed',
+  doctorAlreadyExits: 'Doctor already exits',
 
   roomUpdateFailed: 'Room Update Failed',
-  hospitalUpdateFailed: 'Hospital Update Failed',
+  hospitalNotFound: 'Hospital not found',
   doctorUpdateFailed: 'Doctor Update Failed',
   patientUpdateFailed: 'Patient Update Failed',
 

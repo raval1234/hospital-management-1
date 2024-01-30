@@ -6,7 +6,6 @@ import APIError from '../helpers/APIError';
 import Patient from '../../server/models/patient';
 import httpStatus from 'http-status';
 import { ErrMessages, SuccessMessages } from '../helpers/AppMessages';
-const ObjectId = require('mongoose').Types.ObjectId;
 
 async function c_hospital(req, res, next) {
   try {
@@ -24,6 +23,75 @@ async function c_hospital(req, res, next) {
       );
 
     next(SuccessMessages.hospitalCreated);
+  } catch (err) {
+    return next(
+      new APIError(err.message, httpStatus.INTERNAL_SERVER_ERROR, true, err)
+    );
+  }
+}
+
+async function list_hospital(req, res, next) {
+  try {
+    let populate = [{ path: 'doctorsId', select: 'name' }];
+    let srt = await Hospital.find({})
+      .select('name address call_num')
+      .populate(populate);
+
+    next(srt);
+  } catch (err) {
+    return next(
+      new APIError(err.message, httpStatus.INTERNAL_SERVER_ERROR, true, err)
+    );
+  }
+}
+
+async function get_hospital(req, res, next) {
+  try {
+    let filter = { _id: req.query._id };
+
+    let populate = [{ path: 'doctorsId', select: 'name' }];
+
+    let hptl = await Hospital.find(filter).populate(populate);
+
+    if (!hptl)
+      return next(
+        new APIError(
+          ErrMessages.hospitalNotFound,
+          httpStatus.UNAUTHORIZED,
+          true
+        )
+      );
+
+    next(hptl);
+  } catch (err) {
+    return next(
+      new APIError(err.message, httpStatus.INTERNAL_SERVER_ERROR, true, err)
+    );
+  }
+}
+
+async function update_hospital(req, res, next) {
+  try {
+    let _id = req.query._id;
+    let { name, address, call_num } = req.body;
+
+    let updatedValue = {};
+    if (name) updatedValue.name = name;
+    if (address) updatedValue.address = address;
+    if (call_num) updatedValue.call_num = call_num;
+
+    let hptl = await Hospital.updateOne({ _id }, updatedValue);
+
+    if (!hptl)
+      return next(
+        new APIError(
+          ErrMessages.hospitalUpdateFailed,
+          httpStatus.UNAUTHORIZED,
+          true
+        )
+      );
+
+    next(SuccessMessages.hospitalUpdate);
   } catch (err) {
     return next(
       new APIError(err.message, httpStatus.INTERNAL_SERVER_ERROR, true, err)
@@ -74,83 +142,10 @@ async function d_hospital(req, res, next) {
   }
 }
 
-async function list_hospital(req, res, next) {
-  try {
-    let populate = [{ path: 'doctorsId', select: 'name' }];
-    let srt = await Hospital.find({})
-      .select('name address call_num')
-      .populate(populate);
-
-    next(srt);
-  } catch (err) {
-    return next(
-      new APIError(err.message, httpStatus.INTERNAL_SERVER_ERROR, true, err)
-    );
-  }
-}
-
-async function get_hospital(req, res, next) {
-  try {
-    let filter = { _id: req.query._id };
-
-    let populate = [{ path: 'doctorsId', select: 'name' }];
-
-    let hptl = await Hospital.find(filter).populate(populate);
-
-    if (!hptl)
-      return next(
-        new APIError(
-          ErrMessages.hospitalNotFound,
-          httpStatus.UNAUTHORIZED,
-          true
-        )
-      );
-
-    next(hptl);
-  } catch (err) {
-    return next(
-      new APIError(err.message, httpStatus.INTERNAL_SERVER_ERROR, true, err)
-    );
-  }
-}
-
-async function update_hospital(req, res, next) {
-  try {
-    let { _id, name, address, call_num, doctorsId } = req.body;
-
-    let updatedValue = {};
-    if (name) updatedValue.name = name;
-    if (address) updatedValue.address = address;
-    if (call_num) updatedValue.call_num = call_num;
-    if (doctorsId) {
-      let doctor = ObjectId(doctorsId);
-      updatedValue.$push = { doctorsId: doctor };
-    }
-    console.log(updatedValue);
-
-    let hptl = await Hospital.updateOne({ _id }, updatedValue);
-
-    if (!hptl)
-      return next(
-        new APIError(
-          ErrMessages.hospitalUpdateFailed,
-          httpStatus.UNAUTHORIZED,
-          true
-        )
-      );
-
-    next(SuccessMessages.hospitalUpdate);
-  } catch (err) {
-    return next(
-      new APIError(err.message, httpStatus.INTERNAL_SERVER_ERROR, true, err)
-    );
-  }
-}
-
 module.exports = {
   c_hospital,
-  d_hospital,
-  update_hospital,
   get_hospital,
   list_hospital,
+  update_hospital,
+  d_hospital,
 };

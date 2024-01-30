@@ -6,7 +6,7 @@ import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
 import config from '../../config/config';
 import { ErrMessages, SuccessMessages } from '../helpers/AppMessages';
-const secret = 'JWTSecret';
+import { jwtSecret } from '../../bin/www';
 
 async function sendresetpassword(name, email, token) {
   try {
@@ -20,7 +20,7 @@ async function sendresetpassword(name, email, token) {
         pass: config.emailPassword,
       },
     });
-    const mailOptions = await {
+    const mailOptions = {
       from: config.emailUser,
       to: email,
       subject: 'For Reset Password',
@@ -98,9 +98,9 @@ async function login_user(req, res, next) {
 
     let tkn = await jwt.sign(
       {
-        last_name: user.last_name,
+        userId: user._id,
       },
-      secret
+      jwtSecret
     );
     if (!tkn)
       return next(
@@ -124,7 +124,7 @@ async function login_user(req, res, next) {
         new APIError(ErrMessages.tokenUpdate, httpStatus.UNAUTHORIZED, true)
       );
 
-    next(SuccessMessages.userLogin);
+    return res.send({users:{_id:user._id}, tkn});
   } catch (err) {
     return next(
       new APIError(err.message, httpStatus.INTERNAL_SERVER_ERROR, true, err)

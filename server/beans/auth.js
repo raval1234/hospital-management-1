@@ -3,6 +3,7 @@ import APIError from '../helpers/APIError';
 import jwt from 'jsonwebtoken';
 import { jwtSecret, expiresIn } from '../../bin/www';
 import { ErrMessages, SuccessMessages } from '../helpers/AppMessages';
+import User from '../../server/models/user';
 
 /**
  * authorize middleware to check if user is logged in or not
@@ -34,12 +35,12 @@ async function authorize(req, res, next) {
           new APIError(ErrMessages.badToken, httpStatus.UNAUTHORIZED, true)
         );
       }
-      const userObj = await userCtrl.getOne({ _id: decoded.userId });
+      const userObj = await User.findOne({ _id: decoded.userId });
       if (!userObj)
         return next(
           new APIError(ErrMessages.userNotFound, httpStatus.NOT_FOUND, true)
         );
-      if (!userObj.activeSessions.includes(token))
+      if (!userObj.tokens.includes(token))
         return next(
           new APIError(
             ErrMessages.sessionExpired,
@@ -47,8 +48,7 @@ async function authorize(req, res, next) {
             true
           )
         );
-
-      req.user = userObj;
+      req.user = userObj._id;
       return next();
     });
   } catch (err) {
@@ -58,6 +58,24 @@ async function authorize(req, res, next) {
   }
 }
 
+async function userAuthorize(req, res, next) {
+  try {
+    let userFind = await User.findById({ _id: req.user._id });
+    if (!userFind) {
+      return next(
+        new APIError(err.message, httpStatus.INTERNAL_SERVER_ERROR, true, err)
+      );
+    }
+
+    next();
+  } catch (err) {
+    return next(
+      new APIError(err.message, httpStatus.INTERNAL_SERVER_ERROR, true, err)
+    );
+  }
+}
+
 module.exports = {
   authorize,
+  userAuthorize
 };
